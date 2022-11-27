@@ -7,53 +7,37 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny)
-library(plotly)
-library(dplyr)
+install.packages("leaflet") # Download and install leaflet package
+library(leaflet) # Loads the leaflet library for use
 
-# airport locations
-air <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2011_february_us_airport_traffic.csv')
-# flights between airports
-flights <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2011_february_aa_flight_paths.csv')
-flights$id <- seq_len(nrow(flights))
+runs <- read.csv("https://raw.githubusercontent.com/mlayton20/dataanalysis/master/my-runs.csv") # Read in the run data
+unique_runs <- unique(runs$run) # Store the unqiue runs.
+
+# Call the leaflet package to setup the maps and add the stops
+m <- leaflet() %>%
+  addProviderTiles("CartoDB.Positron") # Add the map tiles
+
+# For each unique run number, map the route
+for (i in 1:length(unique_runs)) {
+  run_number <- unique_runs[i] # Get the run number.
+  m <- addPolylines(m, lng=runs[runs$run == run_number,"longitude"],
+                    lat=runs[runs$run == run_number,"latitude"],
+                    color = ifelse(run_number==1,"blue","red"))
+}
+
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-
-    # Application title
-    titlePanel("Project DynaMAR Map"),
-
-    # map projection
-    fig
+  
+  # Application title
+  titlePanel("Project DynaMAR Map"),
+  
+  # map projection
+  m
 )
 
-# Define server logic required to draw a histogram
+# Define server logic
 server <- function(input, output) {
-    
-    # map projection
-    geo <- list(
-      scope = 'north america',
-      projection = list(type = 'azimuthal equal area'),
-      showland = TRUE,
-      landcolor = toRGB("gray95"),
-      countrycolor = toRGB("gray80")
-    )
-    
-    fig <- plot_geo(locationmode = 'USA-states', color = I("red"))
-    fig <- fig %>% add_markers(
-      data = air, x = ~long, y = ~lat, text = ~airport,
-      size = ~cnt, hoverinfo = "text", alpha = 0.5
-    )
-    fig <- fig %>% add_segments(
-      data = group_by(flights, id),
-      x = ~start_lon, xend = ~end_lon,
-      y = ~start_lat, yend = ~end_lat,
-      alpha = 0.3, size = I(1), hoverinfo = "none"
-    )
-    fig <- fig %>% layout(
-      title = 'Feb. 2011 American Airline flight paths<br>(Hover for airport names)',
-      geo = geo, showlegend = FALSE, height=800
-    )
 }
 
 # Run the application 
