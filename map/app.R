@@ -10,7 +10,7 @@
 # install.packages("leaflet") # Download and install leaflet package
 library(leaflet) # Loads the leaflet library for use
 
-runs <- read.csv("Processed_GPE3_Tracks_BUM_SAL.csv") # Read in the run data
+runs <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv") # Read in the run data
 unique_runs <- unique(runs$run) # Store the unqiue runs.
 
 # Call the leaflet package to setup the maps and add the stops
