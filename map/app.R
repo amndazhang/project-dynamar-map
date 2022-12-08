@@ -1,28 +1,21 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 # install.packages("leaflet") # Download and install leaflet package
 library(leaflet) # Loads the leaflet library for use
 
-runs <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv") # Read in the run data
-unique_runs <- unique(runs$run) # Store the unqiue runs.
+runs2 <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv")
+unique_fish <- unique(runs2$species)
 
 # Call the leaflet package to setup the maps and add the stops
 m <- leaflet() %>%
   addProviderTiles("CartoDB.Positron") # Add the map tiles
 
-# For each unique run number, map the route
-for (i in 1:length(unique_runs)) {
-  run_number <- unique_runs[i] # Get the run number.
-  m <- addPolylines(m, lng=runs[runs$run == run_number,"longitude"],
-                    lat=runs[runs$run == run_number,"latitude"],
-                    color = ifelse(run_number==1,"blue","red"))
+ #For each unique run number, map the route
+
+for (i in 1:length(unique_fish)) {
+  run_species <- unique_fish[i] # Get the run number.
+  m <- addPolylines(m, lng=runs2[runs2$species == run_species,"lon"],
+                    lat=runs2[runs2$species == run_species,"lat"],
+                    color = ifelse(run_species=="BUM","blue","red"),
+                    weight=1)
 }
 
 
