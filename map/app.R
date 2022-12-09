@@ -1,47 +1,54 @@
-# install.packages("leaflet")
+library(shiny)
 library(leaflet)
+library(RColorBrewer)
+library(htmltools)
 
-runs2 <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv")
-unique_fish <- unique(runs2$species)
+tracks <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv")
+unique_fish <- unique(tracks$species)
 
-m <- leaflet() %>% addProviderTiles("CartoDB.Positron")
+map <- leaflet() %>% addProviderTiles("CartoDB.Positron")
 
-for (i in 1:length(unique_fish)) {
-  run_species <- unique_fish[i]
-  m <- addPolylines(m, lng=runs2[runs2$species == run_species,"lon"],
-                    lat=runs2[runs2$species == run_species,"lat"],
-                    color = ifelse(run_species=="BUM","blue","red"),
-                    weight=1)
-  
-  m <- addCircles(m, lng=runs2[runs2$species == run_species,"lon"], 
-                  lat=runs2[runs2$species == run_species,"lat"], 
-                  color = "black", weight = 1, radius = 5)
-}
-
-#print(value)
-
-ui <- fluidPage(
-  titlePanel("Project DynaMar Map"),
-
-  sidebarLayout(
-    
-    sidebarPanel(
-      checkboxGroupInput("display", "Display:", c("lines", "points")),
-      verbatimTextOutput("value")
-      #selectInput("tags", "Tag SN: ", unique(runs2$ptt), multiple = TRUE),
-      #tableOutput("data"),
-      #sliderInput("rng", "Depth Range", value = c(-2000, 0), min = -2000, max = 0)
-    ),
-    
-    mainPanel(
-      m
-    )
+ui <- bootstrapPage(
+  tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
+  leafletOutput("map", width = "100%", height = "100%"),
+  absolutePanel(top = 10, right = 10,
+                sliderInput("range", "Depth", value = c(-2000, 0), min = -2000, max = 0),
+                selectInput("tags", "Tag SN: ", unique(tracks$ptt), multiple = TRUE),
+                checkboxInput("legend", "Show legend", TRUE),
+                checkboxInput("points", "Show points", TRUE),
+                checkboxInput("lines", "Show paths", TRUE),
   )
 )
 
 server <- function(input, output, session) {
-  #output$value <- reactive({input$display})
+  
+  output$map <- renderLeaflet({
+    leaflet(tracks) %>% addTiles() %>%
+      fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat))
+  })
+  
+  # Update Tag SN input.
+  filteredData <- reactive({
+    tracks[tracks$ptt == input$tags,]
+  })
+  
+  # Update points and paths checkboxes.
+  observe({
+    proxy <- leafletProxy("map", data = filteredData())
+    proxy %>% clearShapes()
+    
+    if (input$lines) {
+      proxy %>% addPolylines(lng = ~lon, lat = ~lat, color = "#ff9632", 
+                             weight = 5, fillOpacity = 2, 
+                             label = ~htmlEscape(tracks$ptt))
+    }
+    if (input$points) {
+      proxy %>% addCircles(radius = 20, weight = 10, color = "#cf212e",
+                           fillColor = "red", fillOpacity = 2, 
+                           label = ~htmlEscape(tracks$date))
+    } 
+  })
+  
+}
 
-} 
-
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
