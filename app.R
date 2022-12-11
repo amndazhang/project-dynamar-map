@@ -34,13 +34,16 @@ server <- function(input, output, session) {
     proxy <- leafletProxy("map", data = filteredData())
     proxy %>% clearShapes()
     
+    s <- tracks[tracks$ptt == input$tags,]$species
     if (input$lines) {
-      proxy %>% addPolylines(lng = ~lon, lat = ~lat, color = "#ff9632", 
+      proxy %>% addPolylines(lng = ~lon, lat = ~lat, 
                              weight = 3, fillOpacity = 2, 
-                             label = ~htmlEscape(species))
+                             label = ~htmlEscape(species),
+                             color = ifelse(s=="BUM", "#ff9632", "#d743d9"))
     }
     if (input$points) {
-      proxy %>% addCircles(radius = 20, weight = 10, color = "#ff9632",
+      proxy %>% addCircles(radius = 20, weight = 10, 
+                           color = ifelse(s=="BUM", "#ff9632", "#d743d9"),
                            fillColor = "red", fillOpacity = 1, 
                            label = ~htmlEscape(date))
     }   
