@@ -1,0 +1,24 @@
+devtools::install_github("ropenscilabs/mregions")
+library("mregions")
+
+res <- mr_place_types()
+head(res$type)
+
+res <- mr_records_by_type(type = "EEZ")
+head(res)
+
+shp <- mr_shp(name = "Belgian Exclusive Economic Zone")
+wkt <- mr_as_wkt(shp)
+library('httr')
+library('data.table')
+args <- list(scientificname = "Abra alba", geometry = wkt, limit = 100)
+res <- httr::GET('http://api.iobis.org/occurrence', query = args)
+xx <- data.table::setDF(data.table::rbindlist(httr::content(res)$results, use.names = TRUE, fill = TRUE))
+xx <- xx[, c('scientificName', 'decimalLongitude', 'decimalLatitude')]
+names(xx)[2:3] <- c('longitude', 'latitude')
+
+library('leaflet')
+leaflet() %>%
+  addTiles() %>%
+  addCircleMarkers(data = xx) %>%
+  addPolygons(data = shp)
