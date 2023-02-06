@@ -37,14 +37,14 @@ server <- function(input, output, session) {
     s <- tracks[tracks$ptt == input$tags,]$species
     if (input$lines) {
       proxy %>% addPolylines(lng = ~lon, lat = ~lat, 
-                             weight = 3, fillOpacity = 2, 
+                             weight = 10, fillOpacity = 20, 
                              label = ~htmlEscape(species),
-                             color = ifelse(s=="BUM", "#ff9632", "#d743d9"))
+                             color = ifelse(s=="BUM", brewer.pal(9, "Reds"), brewer.pal(9, "Blues")))
     }
     if (input$points) {
-      proxy %>% addCircles(radius = 20, weight = 10, 
-                           color = ifelse(s=="BUM", "#ff9632", "#d743d9"),
-                           fillColor = "red", fillOpacity = 1, 
+      proxy %>% addCircles(radius = 10, weight = 10, 
+                           color = ifelse(s=="BUM", "#ff4d00", "#0033ff"),
+                           fillColor = "red", fillOpacity = 5, 
                            label = ~htmlEscape(date))
     }   
   })
