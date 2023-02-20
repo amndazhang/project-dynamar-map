@@ -10,32 +10,46 @@ map <- leaflet() %>% addProviderTiles("CartoDB.Positron")
 
 ui <- bootstrapPage(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
-  leafletOutput("map", width = "100%", height = "100%")
+  leafletOutput("map", width = "100%", height = "100%"),
+  absolutePanel(top = 10, right = 10,
+                checkboxInput("showall", "Show all", TRUE),
+                selectInput("tags", "Tag SN: ", unique(tracks$ptt), multiple = FALSE),
+                checkboxInput("points", "Show points", TRUE),
+                checkboxInput("lines", "Show paths", TRUE),
+                checkboxInput("legend", "Show legend", TRUE)
+  )
 )
 
 server <- function(input, output, session) {
   
   output$map <- renderLeaflet({
     leaflet(tracks) %>% addTiles() %>%
-    fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat)) %>%
-    # Overlay groups
-    addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
-               label = ~htmlEscape(date), group = "Points") %>%
-    addPolylines(lng = ~lon, lat = ~lat, weight = 2, group = "Outline") %>%
-    # Layers control
-    addLayersControl(
-      baseGroups = c("Show All", "Show Specific"),
-      overlayGroups = c("Points", "Outline"),
-      options = layersControlOptions(collapsed = FALSE)) %>%
-    addLegend("bottomright", 
-              colors = c("#ff4d00",  "#0033ff"),
-              labels = c("SAL", "BUM"),
-              title = "Species",
-              opacity = 1)
+      fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat))
   })
-
+  
   observe({
-  }) 
+    if (!input$showall){
+      filteredData <- reactive({tracks[tracks$ptt == input$tags,]})
+    } else {
+      filteredData <- reactive({tracks[tracks$ptt,]})
+    }
+    
+    leafletProxy("map", data = filteredData()) %>% 
+      clearShapes() %>% 
+      addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
+                 label = ~htmlEscape(date), group = "Points") %>% 
+      addPolylines(lng = ~lon, lat = ~lat, weight = 2, color = "red", group = "Outline")
+    
+    if (input$legend) {
+      leafletProxy("map", data = filteredData()) %>% 
+        clearControls() %>%
+        addLegend("bottomright", 
+                  colors = c("red",  "blue"),
+                  labels = c("SAL", "BUM"),
+                  title = "Species",
+                  opacity = 1)
+    }
+  })
   
 }
 
