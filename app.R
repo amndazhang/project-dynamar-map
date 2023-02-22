@@ -4,8 +4,7 @@ library(htmltools)
 library(RColorBrewer)
 
 tracks <- read.csv("https://raw.githubusercontent.com/amndazhang/project-dynamar-map/master/Processed_GPE3_Tracks_BUM_SAL.csv")
-unique_fish <- unique(tracks$species)
-
+unique_tracks <- unique(tracks$ppt)
 map <- leaflet() %>% addProviderTiles("CartoDB.Positron")
 
 ui <- bootstrapPage(
@@ -38,12 +37,16 @@ server <- function(input, output, session) {
         addPolylines(lng = ~lon, lat = ~lat, weight = 2, color = ifelse(s=="BUM", "blue", "red"))
     } else {
       filteredData <- reactive({tracks[tracks$ptt,]})
+      #s <- tracks[tracks$ptt == input$tags,]$species
       output$map <- renderLeaflet({
         leaflet(tracks) %>% addTiles() %>%
           fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat)) %>%
           addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
+                     #color = ifelse(tracks[tracks$ptt == input$tags,]$species=="BUM", "blue", "red"),
                      label = ~htmlEscape(date)) %>%
-          addPolylines(lng = ~lon, lat = ~lat, weight = 2)
+          addPolylines(lng = ~lon, lat = ~lat, weight = 2, 
+                       #color = ifelse(tracks[tracks$ptt == input$tags,]$species=="BUM", "blue", "red")
+          )
       })
     }
     
