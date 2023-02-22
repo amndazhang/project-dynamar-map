@@ -30,15 +30,23 @@ server <- function(input, output, session) {
   observe({
     if (!input$showall){
       filteredData <- reactive({tracks[tracks$ptt == input$tags,]})
+      s <- tracks[tracks$ptt == input$tags,]$species
+      leafletProxy("map", data = filteredData()) %>% 
+        clearShapes() %>% 
+        addCircles(lng = ~lon, lat = ~lat, weight = 3, radius = 100,
+                   label = ~htmlEscape(date), color = ifelse(s=="BUM", "blue", "red")) %>% 
+        addPolylines(lng = ~lon, lat = ~lat, weight = 2, color = ifelse(s=="BUM", "blue", "red"))
     } else {
       filteredData <- reactive({tracks[tracks$ptt,]})
+      output$map <- renderLeaflet({
+        leaflet(tracks) %>% addTiles() %>%
+          fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat)) %>%
+          addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
+                     label = ~htmlEscape(date)) %>%
+          addPolylines(lng = ~lon, lat = ~lat, weight = 2)
+      })
     }
     
-    leafletProxy("map", data = filteredData()) %>% 
-      clearShapes() %>% 
-      addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
-                 label = ~htmlEscape(date), group = "Points") %>% 
-      addPolylines(lng = ~lon, lat = ~lat, weight = 2, color = "red", group = "Outline")
     
     if (input$legend) {
       leafletProxy("map", data = filteredData()) %>% 
