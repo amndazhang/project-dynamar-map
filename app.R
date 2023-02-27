@@ -37,6 +37,8 @@ server <- function(input, output, session) {
                 opacity = 1)
   })
   
+  # EEZ boundary
+  
   # Fish paths
   observe({
     
