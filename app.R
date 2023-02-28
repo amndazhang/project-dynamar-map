@@ -19,7 +19,8 @@ ui <- bootstrapPage(
                   selectInput("tags", "Tag SN: ", unique(tracks$ptt), multiple = FALSE)
                 ),
                 checkboxInput("points", "Show points", TRUE),
-                checkboxInput("lines", "Show paths", TRUE)),
+                checkboxInput("lines", "Show paths", TRUE),
+                checkboxInput("legend", "Show legend", TRUE)),
   absolutePanel(bottom = 10, left = 20,
                 p("Acknowledgment to scientists who donated the data HERE."))
 )
@@ -27,14 +28,17 @@ ui <- bootstrapPage(
 server <- function(input, output, session) {
   
   # Basic map
-  output$map <- renderLeaflet({
-    leaflet(tracks) %>% addTiles() %>%
-      fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat)) %>%
-      addLegend("bottomright", 
-                colors = c("red",  "blue"),
-                labels = c("SAILFISH", "BLUE MARLIN"),
-                title = "Species",
-                opacity = 1)
+  observe({
+    filteredData <- reactive({ tracks[tracks$ptt,] })
+    if (input$legend){
+      leafletProxy("map", data = filteredData()) %>% addLegend("bottomright", 
+                                                      colors = c("red",  "blue"),
+                                                      labels = c("SAILFISH", "BLUE MARLIN"),
+                                                      title = "Species",
+                                                      opacity = 1)
+    } else {
+      leafletProxy("map", data = filteredData()) %>% clearControls()
+    }
   })
   
   # Fish paths
@@ -53,41 +57,23 @@ server <- function(input, output, session) {
         proxy %>% addPolylines(lng = ~lon, lat = ~lat, 
                                weight = 3, 
                                label = ~htmlEscape(species),
-                               color = ifelse(s=="BUM", "red", "blue"))
+                               color = ifelse(s=="BUM", "blue", "red"))
       }
       if (input$points) {
         proxy %>% addCircles(radius = 10, weight = 5, 
-                             color = ifelse(s=="BUM", "red", "blue"),
+                             color = ifelse(s=="BUM", "blue", "red"),
                              fillColor = "red", fillOpacity = 10, 
                              label = ~htmlEscape(date))
       }
     } else { # show all
-      filteredData <- reactive({
-        tracks[tracks$ptt,]
+      output$map <- renderLeaflet({
+        leaflet(tracks) %>% addTiles() %>%
+          fitBounds(~min(lon), ~min(lat), ~max(lon), ~max(lat)) %>%
+          # Overlay groups
+          addCircles(lng = ~lon, lat = ~lat, weight = 2, radius = 5,
+                     label = ~htmlEscape(date), group = "Show All") %>%
+          addPolylines(lng = ~lon, lat = ~lat, weight = 2, group = "Show All")
       })
-      
-      proxy <- leafletProxy("map", data = filteredData())
-      proxy %>% clearShapes()
-      
-      for (i in 1:length(unique_fish)) {
-        tag <- unique_fish[i]
-        tag
-        s <- tracks[tracks$ptt == tag, "species"]
-        s
-        if (input$lines) {
-          proxy %>% addPolylines(lng = tracks[tracks$ptt == tag, "lon"], lat = tracks[tracks$ptt == tag, "lat"], 
-                                 weight = 3, 
-                                 label = ~htmlEscape(species),
-                                 color = ifelse(s=="BUM", brewer.pal(9, "Reds"), brewer.pal(9, "Blues")))
-        }
-        if (input$points) {
-          proxy %>% addCircles(lng = tracks[tracks$ptt == tag, "lon"], lat = tracks[tracks$ptt == tag, "lat"],
-                              radius = 10, weight = 5, 
-                               color = ifelse(s=="BUM", "red", "blue"),
-                               fillColor = "red", fillOpacity = 10, 
-                               label = ~htmlEscape(date))
-        } 
-      }
     }
   })
 }
